@@ -1,0 +1,483 @@
+```html
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini PvP Battle</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    overflow:hidden;
+}
+
+/* ===== LOBBY ===== */
+
+#lobby{
+    position:fixed;
+    inset:0;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
+    color:white;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+
+.logo{
+    font-size:60px;
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
+.start-btn{
+    padding:15px 50px;
+    border:none;
+    border-radius:50px;
+    background:#f59e0b;
+    color:white;
+    font-size:24px;
+    cursor:pointer;
+}
+
+/* ===== GAME ===== */
+
+#gameScreen{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:linear-gradient(#14532d,#052e16);
+}
+
+.arena{
+    height:100vh;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+}
+
+.fighter{
+    text-align:center;
+    color:white;
+}
+
+.character{
+    width:140px;
+    height:140px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:60px;
+    font-weight:bold;
+    border:4px solid white;
+}
+
+.charA{
+    background:#2563eb;
+}
+
+.charB{
+    background:#dc2626;
+}
+
+.hp-box{
+    width:220px;
+    height:24px;
+    background:#333;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:15px;
+}
+
+.hp{
+    width:100%;
+    height:100%;
+    background:limegreen;
+    transition:.3s;
+}
+
+.hp-text{
+    margin-top:8px;
+}
+
+#battleLog{
+    position:absolute;
+    bottom:30px;
+    width:100%;
+    text-align:center;
+    color:white;
+    font-size:28px;
+    font-weight:bold;
+}
+
+#winnerPanel{
+    position:absolute;
+    inset:0;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,.8);
+    color:white;
+    font-size:60px;
+    font-weight:bold;
+}
+
+.projectile{
+    position:absolute;
+    top:45%;
+    font-size:50px;
+    z-index:999;
+}
+
+.controls{
+    position:absolute;
+    top:20px;
+    width:100%;
+    text-align:center;
+    color:white;
+    font-size:20px;
+}
+
+</style>
+</head>
+<body>
+
+<!-- LOBBY -->
+
+<div id="lobby">
+    <div class="logo">BATTLE ARENA</div>
+    <button class="start-btn" onclick="startGame()">
+        START
+    </button>
+</div>
+
+<!-- GAME -->
+
+<div id="gameScreen">
+
+    <div class="controls">
+        A bắn: [E] &nbsp;&nbsp;&nbsp; B bắn: [M]
+    </div>
+
+    <div class="arena">
+
+        <div class="fighter">
+
+            <div class="character charA">
+                A
+            </div>
+
+            <div class="hp-box">
+                <div id="hpA" class="hp"></div>
+            </div>
+
+            <div id="hpAText" class="hp-text">
+                100 HP
+            </div>
+
+        </div>
+
+        <div class="fighter">
+
+            <div class="character charB">
+                B
+            </div>
+
+            <div class="hp-box">
+                <div id="hpB" class="hp"></div>
+            </div>
+
+            <div id="hpBText" class="hp-text">
+                100 HP
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="battleLog">
+        Nhấn E hoặc M để bắn
+    </div>
+
+    <div id="winnerPanel"></div>
+
+</div>
+
+<script>
+
+let hpA = 100;
+let hpB = 100;
+
+/* ===== START ===== */
+
+function startGame(){
+
+    hpA = 100;
+    hpB = 100;
+
+    updateUI();
+
+    document.getElementById("winnerPanel").style.display = "none";
+
+    document.getElementById("lobby").style.display = "none";
+    document.getElementById("gameScreen").style.display = "block";
+
+    document.getElementById("battleLog").innerHTML =
+        "Nhấn E hoặc M để bắn";
+}
+
+/* ===== KEYBOARD ===== */
+
+document.addEventListener("keydown", e => {
+
+    if(document.getElementById("gameScreen").style.display !== "block"){
+        return;
+    }
+
+    if(hpA <= 0 || hpB <= 0){
+        return;
+    }
+
+    const key = e.key.toLowerCase();
+
+    if(key === "e"){
+        shootA();
+    }
+
+    if(key === "m"){
+        shootB();
+    }
+
+});
+
+/* ===== SHOOT A ===== */
+
+function shootA(){
+
+    const damage = random(5,15);
+
+    launchProjectile("A");
+
+    setTimeout(()=>{
+
+        hpB -= damage;
+        hpB = Math.max(0,hpB);
+
+        playBoom();
+
+        document.getElementById("battleLog").innerHTML =
+            `💥 BÙM! A gây ${damage} sát thương`;
+
+        updateUI();
+
+        checkWinner();
+
+    },500);
+
+}
+
+/* ===== SHOOT B ===== */
+
+function shootB(){
+
+    const damage = random(5,15);
+
+    launchProjectile("B");
+
+    setTimeout(()=>{
+
+        hpA -= damage;
+        hpA = Math.max(0,hpA);
+
+        playChat();
+
+        document.getElementById("battleLog").innerHTML =
+            `👋 CHÁT! B gây ${damage} sát thương`;
+
+        updateUI();
+
+        checkWinner();
+
+    },500);
+
+}
+
+/* ===== PROJECTILE ===== */
+
+function launchProjectile(from){
+
+    const bullet = document.createElement("div");
+
+    bullet.className = "projectile";
+    bullet.innerHTML = "🟢";
+
+    if(from === "A"){
+
+        bullet.style.left = "20%";
+
+        bullet.animate([
+            { left:"20%" },
+            { left:"75%" }
+        ],{
+            duration:500,
+            easing:"linear"
+        });
+
+    }else{
+
+        bullet.style.left = "75%";
+
+        bullet.animate([
+            { left:"75%" },
+            { left:"20%" }
+        ],{
+            duration:500,
+            easing:"linear"
+        });
+
+    }
+
+    document.getElementById("gameScreen")
+        .appendChild(bullet);
+
+    setTimeout(()=>{
+        bullet.remove();
+    },500);
+}
+
+/* ===== UI ===== */
+
+function updateUI(){
+
+    document.getElementById("hpA").style.width =
+        hpA + "%";
+
+    document.getElementById("hpB").style.width =
+        hpB + "%";
+
+    document.getElementById("hpAText").innerHTML =
+        hpA + " HP";
+
+    document.getElementById("hpBText").innerHTML =
+        hpB + " HP";
+
+    setColor("hpA", hpA);
+    setColor("hpB", hpB);
+}
+
+function setColor(id,hp){
+
+    let color = "limegreen";
+
+    if(hp < 60) color = "orange";
+    if(hp < 30) color = "red";
+
+    document.getElementById(id).style.background =
+        color;
+}
+
+/* ===== WINNER ===== */
+
+function checkWinner(){
+
+    if(hpA <= 0){
+
+        showWinner("🏆 B THẮNG");
+    }
+
+    if(hpB <= 0){
+
+        showWinner("🏆 A THẮNG");
+    }
+}
+
+function showWinner(text){
+
+    document.getElementById("winnerPanel").style.display =
+        "flex";
+
+    document.getElementById("winnerPanel").innerHTML =
+        text;
+
+    setTimeout(backToLobby,3000);
+}
+
+function backToLobby(){
+
+    document.getElementById("gameScreen").style.display =
+        "none";
+
+    document.getElementById("lobby").style.display =
+        "flex";
+}
+
+/* ===== SOUND ===== */
+
+function playBoom(){
+
+    const ctx = new AudioContext();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.value = 120;
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + 0.4
+    );
+
+    osc.stop(ctx.currentTime + 0.4);
+}
+
+function playChat(){
+
+    const ctx = new AudioContext();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "square";
+    osc.frequency.value = 700;
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + 0.1
+    );
+
+    osc.stop(ctx.currentTime + 0.1);
+}
+
+/* ===== RANDOM ===== */
+
+function random(min,max){
+    return Math.floor(
+        Math.random() * (max-min+1)
+    ) + min;
+}
+
+</script>
+
+</body>
+</html>
+```
